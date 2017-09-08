@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "\\documentclass[]{report}\n\n%%%%%%%%%%% Latex Packages %%%%%%%%%%%%%%%%%\n\\usepackage{graphicx}\n\\usepackage[margin=2.3cm]{geometry}\n\\usepackage{url}\n\\usepackage[onehalfspacing]{setspace}\n\\usepackage{caption}\n\\usepackage{subcaption}\n\\usepackage{amsmath}\n\\usepackage{longtable}\n\n\\usepackage[T1]{fontenc}\n\\usepackage{titlesec, blindtext, color}\n\\definecolor{gray75}{gray}{0.75}\n\\newcommand{\\hsp}{\\hspace{20pt}}\n\\titleformat{\\chapter}[hang]{\\Huge\\bfseries}{\\thechapter\\hsp\\textcolor{gray75}{|}\\hsp}{0pt}{\\Huge\\bfseries}\n\n\n\\begin{document}\n\n\\begin{titlepage}\n\t\\centering\n\t\\includegraphics[width=0.5\\textwidth]{unil_logo.jpg}\\par\\vspace{1cm}\n\t{\\scshape\\LARGE University of Lausanne\\\\ Departement of Computational Biology \\par}\n\t\\vspace{1cm}\n\t{\\scshape\\Large Master project\\par}\n\t\\vspace{1.5cm}\n\t{\\huge\\bfseries Metabolomics analysis of the Swiss population\\par}\n\t\\vspace{2cm}\n\t{\\Large\\itshape Mirjam Mattei\\par}\n\t\\vfill\n\tsupervised by\\par\n\tProf.~ Sven \\textsc{Bergmann}\\\\\n\tDr. ~ Roger \\textsc{Mallol Parera}\n\n\t\\vfill\n\n% Bottom of the page\n\t{\\large \\today\\par}\n\\end{titlepage}\n\n\n<<loadlibrary,echo=FALSE,include=FALSE>>=\nlibrary(ggplot2)\nlibrary(xtable)\nlibrary(knitr)\nlibrary(formatR)\nlibrary(isa2)\nlibrary(gplots)\n@\n\n<<loadFunctions, echo=FALSE,include=FALSE>>=\nsource('C:/Mimi/Stage_CBG/2.EXPRESSION_MODULE/expression_module/ISA_functions.R')\n\n@\n\n<<loadData,echo=FALSE,include=FALSE>>=\n############## ISA data\nload(\"C://Mimi/UNI/Master/MLS_BIOINFORMATICS/Master_Project_MLS/data/ser_ur_isa20170827.RData\")\n############# Metabolomics data and phenotype data\nload(\"C://Mimi/UNI/Master/MLS_BIOINFORMATICS/Master_Project_MLS/data/metabo_pheno_data.Rdata\")\n@\n\n\\tableofcontents\n\n%-------------------------------------------\n\\chapter{Introduction}\n%--------------------------------------------\nMetabolic Syndrome (MetS) is defined as a cluster of at least three of the following risk factors %\\cite{(Grundy et al. 2005)}\n: low high-density lipoprotein (HDL) cholesterol, high triglycerides, high fasting glucose, high waist circumference, and/or high blood pressure. Phenotypic traits determined by a large number of genes and by the environment, like MetS, are known as complex traits. In this case, the direct link between phenotype and genetic variants is hard to establish, and high statistical power is needed to detect significant associations. \n\n\\section{Clustering methods}\n\n\n\\subsection{Modular Analysis}\nThe Iterative Signature Algorithm (ISA) %\\cite{ihmels2004, ihmels2004a}\n\n\\section{}\n\n\n%-------------------------------------------\n\\chapter{Methods}\n%--------------------------------------------\n\\section{Data pre-processing}\n\\subsection{Normalization}\n\\subsection{Transformation}\n\\section{Modular Analysis}\nTo perform modular analysis of urine and serum metabolomics data we used the isa() function issued from the R package isa2 %\\cite{isa2}.\n\\subsection{}\n\\subsection{Robustness}\nThe robustness paramenter cames from the correlation between column and row in a module.\nMeasure related to coherence -> generalization of the singular value of a matrix?? (eigenvalue??)\nwithout thresholding -> isa = numerical method for singular value decomposition; robustens = principal value of the input matrix.\n\n\\section{}\n\n\n%-------------------------------------------\n\\chapter{Results}\n%--------------------------------------------\n\\section{Modular Analysis}\n\n\\section{Principal Component Analysis}\n\n\\section{Phenotype}\n\n\n%-------------------------------------------\n\\chapter{Supplements}\n%--------------------------------------------\n\n\n\n\\end{document}",
+    "created" : 1503557815740.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "973225578",
+    "id" : "CAE3A30E",
+    "lastKnownWriteTime" : 1504167980,
+    "last_content_update" : 1504167980496,
+    "path" : "C:/Mimi/UNI/Master/MLS_BIOINFORMATICS/Master_Project_MLS/report/Master_project_MLS_MATTEI.Rnw",
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "sweave"
+}
