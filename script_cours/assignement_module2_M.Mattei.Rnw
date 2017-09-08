@@ -1,0 +1,195 @@
+\documentclass{article}
+
+\title{Understanding p-values and the assumptions behind statistical tests}
+\author{Mirjam Mattei\\Advanced Data Analysis II}
+%\date{}
+
+\usepackage[a4paper]{geometry}
+\usepackage[onehalfspacing]{setspace}
+
+\begin{document}
+
+\maketitle
+
+<<loadlibrary, echo=FALSE, warning=FALSE>>=
+library(knitr)
+@
+
+During this analysis we aims to investigate the influence the violations of the assumptions behind two different statistical tests: Linear regression analysis and Analysis of variance (ANOVA) test.
+
+\section*{Linear Regression}
+
+The linear regression undergo to four different assumptions:
+\begin{itemize}
+\item Linearity
+\item Homoscedasticity of residuals
+\item Normality of the residuals
+\item Independency of the residuals
+\end{itemize}
+
+\subsection*{Linearity assumption}
+The first assumption of the linear regression is the linearity assumption, and we will test in this section the effect in case of the violation of it.
+
+<<linearity_assumption, echo = T, include = T>>=
+##Simulated data for checking the Linearity assumption
+# elements of dependent and independent variables are sampled from normal distributions
+set.seed(430) # to reproduce the same random generated data
+n <- 1000 # number of simulated datasets
+m <- 500 # number of values in the simulated dataset 
+pvalues <- rep(NA, n) # generated p-value of linear regression analysis
+for (i in 1:n) {
+  x <- rnorm(m)
+  errors <- rlnorm(m, meanlog=0, sdlog=1)
+  y <- x + errors -1
+pvalues[i] <- summary(lm(y~x))$coefficients[2,4]
+}
+sum(pvalues < 0.05) / length(pvalues)
+@
+
+Considering that in a linear regression we have one independent and one dependent variable this two variable will be significantely correlated between them, even in the case we simulated the data with an error. In the case of normal distributed data 100\% of the linear regression analysis shows a significant correlation between dependent and independen variables.
+
+<<linearity_assumption_exp, echo = T, include = T>>=
+# Independent variables sampled from a normal distribution,
+# dependent data from exponential distribution
+set.seed(430) # to reproduce the same random generated data
+n <- 1000 # number of simulated datasets
+m <- 500 # number of values in the simulated dataset 
+pvalues_exp <- rep(NA, n) # generated p-value of linear regression analysis
+for (i in 1:n) {
+  x_exp <- rnorm(m)
+  errors <- rlnorm(m, meanlog=0, sdlog=1)
+  y_exp <- exp(x_exp + errors-1)
+  pvalues_exp[i] <- summary(lm(y_exp~x_exp))$coefficients[2,4]
+}
+p_exp <- sum(pvalues_exp < 0.05) / length(pvalues_exp)
+p_exp
+@
+
+<<fig1,echo=FALSE,include=TRUE,fig.pos="!h",fig.cap="Distribution of the data using normal distribution for dependent and independent variable in the upper panel, and normal disribution for the independent variable combined with exponential distribution in the lower panel.">>=
+par(mfrow = c(2,2))
+hist(x_exp, main = "Normal distribution", col = "red")
+hist(y_exp, main = "Exponential distribution", col = "blue")
+plot(x,y, col = "red", pch = 19)
+plot(x_exp,y_exp, col = "blue", pch = 19, ylim = c(0,100))
+@
+
+We can observe that the in the case the dependent variable is not linear the influence of the outliers are that important that only a small part of the linear regression analysis shows a significant correlation (Proportion of significant tests = \Sexpr{p_exp}). This is true even if we know that the two variable are dependent. Figure 1 represent the distribution of the independent (red) and dependent (blue) variables in the upper panel. The lover panel shows an example of plotted variable in the with (red) and without (blue) fulfilled linearity assumption.
+
+To overcome the probem non fulfilled linearity assumption it is possible to transform the the data. In the case of the simulated data it is possible to log transforme the dependent variable to have a similar proportion of false negative as the initial analysis. 
+
+<<linearity_assumption_log, echo = T, include = T>>=
+# elements of a independent variables are sampled from a normal distribution,
+# the other from exponential distribution
+set.seed(430) # to reproduce the same random generated data
+n <- 1000 # number of simulated datasets
+m <- 500 # number of values in the simulated dataset 
+pvalues_log <- rep(NA, n) # generated p-value of linear regression analysis
+for (i in 1:n) {
+  x_log <- rnorm(m)
+  errors <- rlnorm(m, meanlog=0, sdlog=1)
+  y_log <- exp(x_log + errors-1)
+  pvalues_log[i] <- summary(lm(log(y_log)~x_log))$coefficients[2,4]
+}
+p_log <- sum(pvalues_log < 0.05) / length(pvalues_log)
+p_log
+@
+
+
+<<fig2,echo=FALSE,include=TRUE,fig.pos="!h",fig.env='figure',fig.height=5.5,fig.cap="P-value score distribution from linear regression analysis. X-axis represent each simulated dataset created, Y-axis represent the p-value. In red (covered by orange dots) we represent the p-value of the linear regression analysis between normal distributed dependent variable. In blue the p-value are created using an exponential dependent variable distribution. The orange dots represent the p-value of a linear regression between an independent variable and a log transformed dependent variable.">>=
+plot(pvalues, col="red", pch = 19, cex = 0.5, main="Plot of p-value distribution from linear regression analysis", ylab="P-value score",xlab="Dataset unit", ylim = c(0,1))
+points(pvalues_exp, col="blue", pch = 19, cex = 0.5)
+points(pvalues_log, col="orange", pch = 19, cex = 0.5)
+@
+
+Figure 2 shows the distribution of the p-values score using normal distributed dependent data (red dots, covered by the orange one), exponential data (blue dots), and log transformed exponential data (orange dots). We can observe the similarity between the distribution od the transormed data and the original data.
+
+\section*{Analysis of variance}
+The assumptions behind the ANOVA test are:
+
+\begin{itemize}
+\item Normal distribution of the residuals
+\item Variance homogeneity in all tested groups (Homoscedasticity)
+\end{itemize}
+
+\subsection*{Testing homogeneity of variance assumption}
+
+We first created two normal distributed variables (variable1 and variable2) with 0 mean and unique standard deviation. We also created a categorical variable (variable3). Variable 1 and 2 should have the same mean and each category (variable3) should have the same kind of data. So if we test the null hypothesis that that variable 1 and 2 have the same mean we would probably reject this hypothesis some times by chanche. If we choose results to be significant at 5\% we would reject the null hypothesis 5 times over 100 analysis. The rejected data would be considered as false positive (Presenting a difference in the mean when no difference are expected).
+
+<<anova,echo = T, include = T>>=
+set.seed(430) # to reproduce the same random generated data
+n <- 1000 # number of simulated datasets
+m <- 500 # number of values in the simulated dataset 
+pvalues_anova <- matrix(NA, nrow = 3, ncol = n) # generated p-value of ANOVA
+for (i in 1:n) {
+data <- data.frame(variable1=rnorm( m ), 
+                   variable3=sample( LETTERS[1:4], m, replace=TRUE, prob=c(0.1, 0.2, 0.65, 0.05) ))
+data$variable2 <- NA
+  a <- rnorm(sum(data$variable3 == "A"))
+  data$variable2[data$variable3 == "A"] <- a
+  b <- rnorm(sum(data$variable3 == "B"))
+  data$variable2[data$variable3 == "B"] <- b
+  c <- rnorm(sum(data$variable3 == "C"))
+  data$variable2[data$variable3 == "C"] <- c
+  d <- rnorm(sum(data$variable3 == "D"))
+  data$variable2[data$variable3 == "D"] <- d  
+  model <- aov(variable1~variable2*variable3, data = data)
+pvalues_anova[,i] <- anova(model)$'Pr(>F)'[1:3]
+}
+p1 <- sum(pvalues_anova[1,] < 0.05) / ncol(pvalues_anova)
+p2 <- sum(pvalues_anova[2,] < 0.05) / ncol(pvalues_anova)
+p3 <- sum(pvalues_anova[3,] < 0.05) / ncol(pvalues_anova)
+@
+
+We observed that the proportion of false positive for the combination of variable variable 1, 2 and 3 as well as the interaction of variable 2 and 3 compared to variable 1 are the following:
+\begin{itemize}
+\item varaible1-variable2 = \Sexpr{p1}
+\item varaible1-variable3 = \Sexpr{p2}
+\item varaible1-variable2:variable3 = \Sexpr{p3}
+\end{itemize}
+
+The comparaison between the mean of variable 1 and 2, as well as between variable 1 and the interaction between variable 2 and 3 (variable2:variable3) present the same amount of false positive (5\%). Compairing the mean value of variable 1 for the different group (variable 3), present a higher number of false positive(6.5\%).
+
+<<anova_var,echo = T, include = T>>=
+set.seed(430) # to reproduce the same random generated data
+n <- 1000 # number of simulated datasets
+m <- 500 # number of values in the simulated dataset 
+pvalues_var <- matrix(NA, nrow = 3, ncol = n) # generated p-value of ANOVA
+for (i in 1:n) {
+data <- data.frame(variable1=rnorm( m ), 
+                   variable3=sample( LETTERS[1:4], m, replace=TRUE, prob=c(0.1, 0.2, 0.65, 0.05) ))
+data$variable2 <- NA
+  a <- rnorm(sum(data$variable3 == "A"), sd = 2)
+  data$variable2[data$variable3 == "A"] <- a
+  b <- rnorm(sum(data$variable3 == "B"), sd = 100)
+  data$variable2[data$variable3 == "B"] <- b
+  c <- rnorm(sum(data$variable3 == "C"), sd = 15)
+  data$variable2[data$variable3 == "C"] <- c
+  d <- rnorm(sum(data$variable3 == "D"), sd = 5000)
+  data$variable2[data$variable3 == "D"] <- d
+  model <- aov(variable1~variable2*variable3, data = data)
+pvalues_var[,i] <- anova(model)$'Pr(>F)'[1:3]
+}
+p1var <- sum(pvalues_var[1,] < 0.05) / ncol(pvalues_var)
+p2var <- sum(pvalues_var[2,] < 0.05) / ncol(pvalues_var)
+p3var <- sum(pvalues_var[3,] < 0.05) / ncol(pvalues_var)
+@
+
+When we violate the homogeneity of variance assumption, i.e. creating a different variance in variable2 for eanch group (variable3) we observed similar tendencies of false positive when we compared the mean of variable 1 and 2, as well as the mean values of variable 1 for the different group (variable 3). In the case of the comparaison betwean the mean of variable 1 and 2 we observed a smaller proportion of small positive as in the case with equal variance between groups.
+
+<<fig3,echo=FALSE,include=TRUE,fig.pos="!h",fig.env='figure',fig.cap="P-value score distribution from Analyisis of variance test. X-axis represent each simulated dataset created, Y-axis represent the p-value. In red we represent the p-value of the ANOVA test between normal distributed variable 1 and 2, having equal variance. The blue dots represent the p-value created using for each group a different variance in variable2.">>=
+plot(pvalues_anova[1,], col="red", pch = 19, cex = 0.5, main="Plot of p-value distribution from ANOVA test", ylab="P-value score",xlab="Dataset unit", ylim = c(0,1))
+points(pvalues_var[1,], col="blue", pch = 19, cex = 0.5)
+@
+
+Figure 3 represent the diference in the p-value distribution. The p-value results from the ANOVA test between variable 1 and 2 of the simulated dataset. With red color we represent the p-value calculated using the same variance in each group of variable2. In blue we represent the same p-value but as a result of an ANOVA test performed on variable 1 and variable 2 having different variance in each group. 
+
+We observed the following proportion of false positive in groups with different variance:
+\begin{itemize}
+\item varaible1-variable2 = \Sexpr{p1var}
+\item varaible1-variable3 = \Sexpr{p2var}
+\item varaible1-variable2:variable3 = \Sexpr{p3var}
+\end{itemize}
+
+This results indicate that the violation of the variance homogeneity assumption reduce the number of false positive found from 5\% to 4.1\%.
+
+\end{document}

@@ -1,0 +1,144 @@
+\documentclass{article}
+
+\title{Assignment: basic data analysis ("A study of low birth weight")}
+\author{Mirjam Mattei\\Advanced Data Analysis}
+\date{November 2016}
+
+\usepackage{adjustbox}
+
+\begin{document}
+
+\maketitle
+
+\section*{Data information}
+
+The data came from a study on birth weight, data that can be found on the  file "birthweigth\_study.csv". We aim to identify factors linked to a lower birth weight. The variables registered are:
+
+\begin{itemize}
+\item age: Age of the mother
+\item lwt: Mother's weight before pregnancy
+\item smoke: Smoking habits
+\item ht: Known hypertension
+\item bwt: Newborn weight
+\item ptd: Preterm birth
+\end{itemize}
+
+
+<<loadData,echo=FALSE,include=FALSE>>=
+##used library
+library(xtable)
+library(knitr)
+library(ggplot2)
+
+## Load data
+birthweigth <- read.csv("C://Mimi/UNI/Master/MLS_BIOINFORMATICS/Isemestre/Advanced_data_analysis/Assignements/Assignement2/birtweigth_study.csv", h = T, sep = " ", stringsAsFactors = T)
+
+attach(birthweigth)
+## Look to the data!
+# Data distribution
+summary(birthweigth)
+
+table(ht, smoke)
+round(addmargins(table( ht, smoke)/sum(table( ht, smoke))),2)
+fisher.test(ht, smoke)
+
+table(ptd, smoke)
+round(addmargins(table( ptd, smoke)/sum(table( ptd, smoke))),2)
+fisher.test(ptd, smoke)
+@
+
+Age, mother's weight before pregnancy and newborn weight are quantitative data summaryzed in the summary table. Age distrubution of women participating to this study are showed in figure 1: \\
+
+
+<<xtable, results="asis",echo=FALSE,include=TRUE,>>=
+cat("\\makebox[\\textwidth]{")
+print(xtable(summary(birthweigth), caption = "Information about the data used in this study"), caption.placement = "top", floating = FALSE)
+cat("}")
+@
+\begin{center}
+Summary table: Information about the data used in this study (age = age of the mother, lwt = mother's weight before pregnancy,  smoke = Smoking habits, ht = Known hypertension, bwt = Newborn weight, ptd = Preterm birth)\\
+\end{center}
+
+189 women are included in thys study, each giving birth to a child. The youngest mother's in this study is 14 years old, the oldest 45, with a mean age of 23.4. Mother's weight vary between a minimum od 80 kg to 250kg with mean weight of 129.8kg. 74 mother were non-smokers, compared to 115 having smoking habits. 177 mothers had known hypertension. Over the 189 newborn 159 born preterm, 30 at term. The birt weight of this child vary between a minimum of 709g to 4990g.
+
+<<hist_age,echo=FALSE,fig.cap="Age distribution of women's partecipating to the birthweight study",fig.pos="h",fig.height=6>>=
+hist(age, 20)
+@
+
+Looking to the dependency of discrete variable (i.e. smoke status, hypertension and preterm bierth) using Fisher independency test we found that smoke status and hypertension are independent between them (p-value = \Sexpr{fisher.test(ht, smoke)$p.value}). On the other hand Fisher exact test result of smoke status and preterm bierth reject null hypothesis of independency. Smoke and preterm birth are dependent variable (p-value = \Sexpr{fisher.test(ptd, smoke)$p.value}).
+
+The proportion of smoking vs non smoking women giving birth preterm are summarized in table 1: 
+
+<<table2,echo=FALSE>>=
+kable(round(addmargins(table( ptd, smoke)/sum(table( ptd, smoke))),2), caption = "percentage of smoking and non-smoking women giving preterm or at term birth")
+@
+
+<<corrInfo,include=TRUE,echo=FALSE,warning=FALSE>>=
+cor_age <- cor.test(bwt, age)
+cor_lwt <- cor.test(bwt, lwt)
+cor_age.lwt <- cor.test(age, lwt)
+@
+
+\newpage
+Correlation test between the different continous variable showed a maximum correlation between newborn weight and mother’s weight before pregnancy Pearsons correlation test = \Sexpr{cor_lwt$estimate} (P-value = \Sexpr{cor_lwt$p.value}), represented in figure 2. Pearson's correlation between birth weight and mother's age is \Sexpr{cor_age$estimate} (P-value = \Sexpr{cor_age$p.value}) and between mother's age and weight before pregnancy \Sexpr{cor_age.lwt$estimate} (P-value = \Sexpr{cor_age.lwt$p.value}). All three wariable present a small correlation but only the newborn weight and mother’s weight before pregnancy were significanly correlated.
+
+<<fig1,echo=FALSE, fig.cap="Mother’s weight before pregnancy plotted against newborn weight representing the linea regression line between the two variable", fig.pos="h", fig.height=5>>=
+plot(bwt, lwt, pch = 19, col = "red", xlab = "Newborn weight(g)", ylab = " Mother’s weight before pregnancy(kg)")
+abline(lm(lwt ~ bwt), lwd = 2)
+@
+\newpage
+Figure 3 show's boxplot of birth weight under the influence of smoking status, preterm birth and known hypertension, all discrete qualitative variable. Non smoking mother give birth to child with smaller weight compared to smoking mother. Hypertension status of mother also influence the neborn weight in a positive way as well as the the preterm condition.
+<<boxplot,include=TRUE,echo=FALSE,warning=FALSE,fig.pos="h",fig.cap="Boxplot of the difference between newborn weight according to smoking (SMOKE) status, preterm (PPREM) birth (NOPPREM = at term birth) and known hypertension (HT) of the mother (NOHT = no known hypertension)">>=
+par(mfrow=c(1,3))
+boxplot(bwt~smoke)
+boxplot(bwt~ptd)
+boxplot(bwt~ht)
+@
+
+<<es,echo=FALSE,include=FALSE>>=
+plot(bwt, lwt, pch = as.integer(ptd), col = as.integer(ptd))
+ggplot(birthweigth,aes(x=bwt, y=lwt,color=ptd, shape=ptd)) +
+    geom_point(size=5) + theme_bw() + scale_color_manual(values=c("red", "blue")) + geom_smooth(method = "lm", se = F)
+
+ggplot(birthweigth, aes(x=bwt, y=age, color=ptd, shape=ptd)) +
+    geom_point(size=5) + theme_bw() + scale_color_manual(values=c("red", "blue")) + geom_smooth(method = "lm", se = F)
+
+@
+
+\section*{Model}
+
+Different questions will be adressed during this report in particulary aiming to explain the newborn weight with the different variable present in the study.
+
+Data analyzed until now suggest that a multiple linear regression could be the better way to explain the newborn weight.
+
+\subsection*{Requiered Conditions for using a multiple linear regression model}
+For testing the applicability conditions of linear regression we loked at the residual distribution:
+
+<<model, echo=FALSE>>=
+mod1 <- lm(bwt ~ lwt + age + smoke + ht + ptd)
+@
+
+<<Residuals,echo=FALSE,include=TRUE,fig.pos="h",fig.cap="Residual vs Fitted: Representation of homogeneity of the data. Normal Q-Q plot: Quantile-quantile graph representing the normal distribution of residuals. Scale location: Squared root value of standartized residuals as a function of fitted values. Residauls vs Levrage: Figure indicating the presence of outliers in the data">>=
+par(mfrow=c(2,2))
+plot(mod1)
+@
+
+Figure 4 shows the graphical analysis of the multiple linear regression model. Residual vs Fitted did not show a particular structure of the data. Normal Q-Q plot do not indicate any divergence of the data compared to normal distribution. The scale location indicate that data are homogeneus distributed. Finally Residual vs Levrage graph indicate outliers that could influence the multiple linear regression we build.
+
+<<model2,echo=FALSE,include=FALSE>>=
+summary(mod1)
+## no influence of age on teh model -> remove age variable as covariate
+mod2 <- lm(bwt ~ lwt + smoke + ht + ptd)
+@
+
+Multiple linear regression based on all the variable indicate that mother's age do not influence birth weight (P-value = \Sexpr{round(summary(mod1)$coefficient[3,4],2)}). For future analysis we will remove the age variable from our model.
+The summary of the model explaining the newborn weight by different covariates (mother's weight before pregnancy) and factors (smoking status, hypertension and preterm birth) are following:
+
+<<summary2,echo=FALSE,include=TRUE>>=
+info <- summary(mod2)
+info
+@
+
+Multiple linear regression analysis shows a significant positive effect of mother’s weight before pregnancy (\Sexpr{round(info$coefficients[2,1], 2)} $\pm$ \Sexpr{round(info$coefficients[2,2],2)}, P = \Sexpr{round(info$coefficients[2,4],2)}) on newborn weight. Surprisignly smoking habits (\Sexpr{round(info$coefficients[3,1], 2)} $\pm$ \Sexpr{round(info$coefficients[3,2],2)}, P = \Sexpr{round(info$coefficients[3,4],2)}) and preterm birth (\Sexpr{round(info$coefficients[5,1], 2)} $\pm$ \Sexpr{round(info$coefficients[5,2],2)}, P = \Sexpr{round(info$coefficients[5,4],2)}) showed a significant positive effect on newborn weight. This means that newborn born preterm presented a higher weight compared to the child born at term. Also childs bonr from a smoking mother present a higher birth weight compared to child of a non-smoker mother. Similarly known hypertension in mother were significantly negative related to the birth weight \Sexpr{round(info$coefficients[4,1], 2)} $\pm$ \Sexpr{round(info$coefficients[4,2],2)}, P = \Sexpr{round(info$coefficients[4,4],2)}), meaning that newborns having a mother without hypertension present a smaller birth weight.
+
+\end{document}

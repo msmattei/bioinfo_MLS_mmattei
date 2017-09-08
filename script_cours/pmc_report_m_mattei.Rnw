@@ -1,0 +1,428 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+
+\usepackage{url}
+\usepackage[onehalfspacing]{setspace}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[margin=2.3cm]{geometry}
+
+\title{Phylogeny and comparative method - Report}
+\author{Mirjam Mattei\\Master MLS 2016/2017}
+%\date{}
+
+\begin{document}
+
+\maketitle
+
+
+<<loadlibrary, echo=FALSE, warning=FALSE>>=
+library(ggplot2)
+library(xtable)
+library(knitr)
+library(formatR)
+@
+
+\section*{Intoduction}
+
+The genus \textit{Amphiprion} from the subfamily Amphiprioninae in the family Pomacentridae, group 29 different species of anemonefish or clownfish. The distribution of the Skunk Anemonefish species \testit{Amphiprion akallopisos} spread from the Indian Ocean to the East African coast, showing an opposite tendency compared to the rest of the genus, which lives in small geographical areas. Considering that the two groups of Skunk Anemonefish fishes are genetically more different compared to other \textit{Amphiprion} species showing more morphological differences, questions about classifications methods, evolution, arise automatically. During this practicals, we will explore which are the mechanism explaining the differences observed in \testit{Amphiprion} spices from an evolutionary point of view. To do so, we will use 7 different DNA regions and compare their sequence in different anemonefish species.
+
+The gene we will analyze during this practicals are: 
+
+\begin{itemize}
+\item Bone morphogenetic protein 4 (bmp4) gene (nuclear DNA region)
+\item Recombination-activating (rag1) gene 1 (nuclear DNA region)
+\item Glycosyltransferase (gylt) gene (nuclear gene)
+\item Zinc finger protein of cerebellum (zic1) nuclear gene
+\item Cytochrome b (cytb) mitochondrial gene
+\item Mitochondrail atp86 gene
+\item 16s rRNA gene (ribosomal)
+\end{itemize}
+
+The differents programs we will use during this practicals are Phyml (Guindon et al, 2010), BEAST (Heled and Drummond, 2010), FigTree, Paml, seaview, BEAUti and Tracer. A short description of each program will follow in the introduction. I used seaview for the conversion from fasta file to the phylip format, the input file for phyML. BEAUti creates the input file for BEAST.
+
+\subsection*{Overview of PhyML}
+PhyML (Guindon et al, 2010) program starts from a Neighbor-Joining tree, as a good approximation of the true phylogeny.  Using a heuristic search to move away from a starting tree the program start from a Neighbor-Joining tree (BioNJ method), make a Nearest Neighbor Interchanges (NNI) or Subtree Pruning and Regrafting (SPR) swap, keeping all model parameters and branch lengths the same. After this step and keeping the topology and model parameters the same, Phyml update the local branch lengths only alone first and finally the model parameters. Phyml does all these steps until the likelihood of the tree does not improve anymore. PhyML uses a very quick way of calculating the likelihood but can represent a dangerous shortcut when the data is not informative enough.
+
+\subsection*{Overview of BEAST}
+BEAST (Heled and Drummond, 2010) is a program that uses Bayesian methods to determine the more likely tree. Bayesian methods calculate the likelihood adding the prior distribution component as a variable. The combination of the prior distribution and the likelihood leads to the posterior distribution i.e the probability of the tree given by the data. The program uses Markov chain Monte Carlo (MCMC) to have a statistical support and normalise each tree by the posterior distribution.
+
+
+\section{Maximum Likelihood}
+
+
+
+
+\subsection{Best models for 7 clownfishes DNA regions}
+
+To test the accuracy of the substitution model chosen, we calculate the Akaike Information Criterion (AIC) for each gene, represented in figure~\ref{fig:mod}. The AIC evaluates the quality of the all possible substitutions model, compared to other substitutions models suggesting which one is the best model to use.
+
+To test which substitution model is the best for each gene I used following code:
+
+<<method_test, echo=TRUE, warning=FALSE, cache=FALSE, eval=FALSE, size="small">>=
+phy_file <- list.files(pattern = "*.phy$")
+npar <- c(1,2,2,3,2,3,3,4,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8,9,10,10,11)
+best_method <- NULL
+for(file in phy_file){
+  phyml <- phymltest(seqfile= file, execname="PhyML_3.0_win32.exe -o lr", append = FALSE)
+  AIC <- 2*(npar-phyml)
+  best_method <- c(best_method, names(which.min(AIC)))
+}
+
+## The tree build using the best method would be the tree numero:
+tree.n <- match(best_method, names(phyml))
+@
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1\textwidth]{figures/Akaike per mode per genes true.png}
+\caption{Akaike Information Criterion (AIC) for the 7 different DNA regions.}
+\label{fig:mod}
+\end{figure}
+
+Thes best method is summarised in Table 1 and figure~\ref{fig:mod}.
+
+<<method_table, results="asis", echo=FALSE>>=
+method <- read.table("C://Mimi/UNI/Master/MLS_BIOINFORMATICS/IIsemestre/cours/Phylogeny_and_Comparative_Method/practicals/maxlikelihood/best_method_result.txt", h = T, sep = "\t")
+
+print(xtable(method, caption="Best model to estimate the tree for different DNA regions."), table.placement = "!h")
+
+@
+
+The gamma parameter (G) represent the shape of a gamma distribution. The higher its value, the lower the variation of substitution rates among sites in the case more than 1 substitution rate category are present. In the R package "ape" the default value is 1.0 (moderate variation). Values less than 0.7 correspond to high variations and higher of 1.5 correspond to low variations. It is possible to estimate the gamma parameter by maximising the likelihood of the phylogeny.
+The invariable sites (I) parameter, represent the proportion of site that does not evolve. With the I parameter set to 0, it is considered that all site have the same substitutions rate. It can also be estimated by the maximum-likelihood structure of the data.
+
+\subsection{Substitution model for different genes}
+
+The best model found for CytB, is the model that generalises the distance derived by Kimura (K80) by loosening the assumption of equal base frequencies (F84) (Felsenstein, 1989). The gamma and the invariant site parameters are estimated (F84+I+G). Genes atp86 and rag1 share the Generalised time reversible (GTR) (Lanave et al. 1984) substitution model to estimate the tree,  both genes with I and G parameters estimated. In the GTR model, it is assumed that the 6 substitutions can be different in frequency and rate. To estimate the phylogenic tree for genes zic1 and bmp4 the best model after AIC estimation is the Hasegawa-Kishino-Yano (HKY85) (Hasegawa et al., 1985) model, with the estimation of the invariant site parameters. In the HKY85 model, the transition and transversion rate are also taken into account. Similarly, gene 16s rRNA use the HKY85 model with the estimated gamma parameters. Finally, for gene gylt, the best model is the Tamura-Nei (TN93) (Tamura and Nei, 1993) with G parameter estimated. In the TN93 model purine (A, G) and pyrimidine (C, T) have a different transition rate compared to the HKY85 model.
+
+\subsection{Phylogeny of CytB gene using different substitutions models}
+
+\begin{figure}
+\centering
+\begin{subfigure}{1.1\columnwidth}
+  \includegraphics[width=1\textwidth]{figures/Clownfish_cytb_phy_phyml_tree_GTRIG.png}
+  \subcaption{Phylocenic tree of Cytochrome b (cytB) gene constructed using GTR model with invariant site and gamma parameters estimated. The branch label correpsond to the number of time the same topology were represented after bootstrap analysis.}
+  \label{fig:cytBa}
+\end{subfigure}
+\begin{subfigure}{1.1\columnwidth}
+  \includegraphics[width=1\textwidth]{figures/Clownfish_cytb_phy_phyml_tree_JC69.png}
+  \subcaption{Phylocenic tree of Cytochrome b (cytB) gene constructed using JC69 model.}
+  \label{fig:cytBb}
+\end{subfigure}
+\caption{Phylocenic tree of Cytochrome b (cytB) gene constructed using two different substitutions model (GTR model on panel a, JC69 model on panel b).}
+\label{fig:cytb}
+\end{figure}
+
+The use of a different model for the phylogenic reconstruction of the cytB gene, i.e JC69 model (Fig.\ref{fig:cytBa}) and GTR with G and I parameters estimated (Fig. \ref{fig:cytBb}) do not change the tree topology drastically. Some small changes are visible, like branch length, some branch swapping and the grouping of species in subtrees. An example of subtree grouping are the species A. clarkii GA003 grouped with A. tricintras GA058 using the JC69 method but not the GTR methods. Moreover, the species Chromis cyanea seems to accumulate more substitutions according to the GTR model compare to the JC69 model, indicating a bigger difference compared to the others species.
+
+\subsection{Effect of tree rearrangement methods on reg1 gene phylogeny}
+In order to choose the best tree, it is possible to rearrange the branches using different methods that swap the branches looking for the most likely position. The simplest swapping method is the nearest-neighbor interchange (NNIs) were a subtree is rearranged by breaking the link with an interior branch, reforming the connection in different positions. The subtree pruning and regrafting (SPR) swapping method breaks a branch removing its subtree and connect this subtree to another branch, comparing the result to the original tree. With both methods, the better tree is kept.
+
+Using the SPR swapping method on rag1 gene we found that the branch length is different, and create three distinct subtrees starting from the parent node using the SPR method. The first contains species \testit{P biaculeatus GA008} and \testit{P biaculeatus GA025}, the second grouping \testit{Chromis cyanea A. ocellaris genome, A. ocellaris GA009, A. ocellaris GA021, A percula GA039 and A percula GA017}, the third the grouping rest of the species. Using the NNI method the first and the second subtree is grouped together. Moreover \testit{A leukocranos GA066} and \testit{A. allardi GA033} seems to have a common ancestor using the SPR method.
+
+\begin{figure}
+\centering
+\begin{subfigure}{1.1\columnwidth}
+  \includegraphics[width=1\textwidth]{figures/Clownfish_rag1_phy_phyml_tree_GTRIG.png}
+  \subcaption{Phylocenic tree of rag1 gene constructed using Nearest Neighbor Interchanges (NNIs) branch swapping. Branch labels indicates the number of time the showed topography were present after 100 non-parametric bootstrap analysis.}
+  \label{fig:reg1nni}
+\end{subfigure}
+\begin{subfigure}{1.1\columnwidth}
+  \includegraphics[width=1\textwidth]{figures/Clownfish_rag1_phy_phyml_tree.png}
+  \subcaption{Phylocenic tree of rag1 gene constructed using Subtree Pruning and Regrafting (SPR) branch swapping. Branch labels indicate the Bayesian posterior probabilities.}
+  \label{fig:reg1spr}
+\end{subfigure}
+\caption{Phalogenic tree of rag1 gene created using two different swapping methods: Nearest Neighbor Interchanges (NNIs) (a) and Subtree Pruning and Regrafting (SPR) (b) branch swapping methods.}
+\label{fig:reg1}
+\end{figure}
+
+\subsection{Tree support}
+To verify how well a tree is supported we performed non-parametrical analysis by bootstrap on the phylogenic tree for each DNA regions with the different models using following code:
+
+<<phaml_code, echo=TRUE, warning=FALSE, cache=FALSE, eval=FALSE, size="small">>=
+for i in {1..7}
+        do file=`sed -n ''$i'p' < best_method_result.txt | awk '{print $1}'`
+        method=`sed -n ''$i'p' < best_method_result.txt | awk '{print $2}' |cut -f 1 -d '+'`
+        met=`sed -n ''$i'p' < best_method_result.txt | awk '{print $2}'`
+        if [ `echo $met | grep "+G" -c` -ne 0 ]
+        then if [ `echo $met | grep "+I" -c` -ne 0 ]
+                then phyml -i $file -m $method -b 100 -v e -a e
+                else phyml -i $file -m $method -b 100 -a e
+                fi
+        else if [ `echo $met | grep "+I" -c` -ne 0 ]
+                then phyml -i $file -m $method -b 100 -v e
+                else phyml -i $file -m $method -b 100
+                fi
+        fi
+done
+@
+
+Using FigTree we visualised the output tree for each of the gene, represented in figures~\ref{fig:cytb}, \ref{fig:reg1} and supplementary figures S1-S5.
+
+The reason why some nodes are not well supported even by bootstrapping
+
+\subsection{Concatenated DNA regions}
+To concatenate all fasta file it is possible to use following bash command: 
+
+<<bash, echo=TRUE, warning=FALSE, cache=FALSE, eval=FALSE>>=
+cat *.fasta > all.fasta
+@
+
+On figure~\ref{fig:all} we observe the phylogenic tree constructed using 7 different genes concatenated in a singular file. The best substitution model for the concatenated file is the GTR method, with gamma parameters and invariant site parameters estimated by phyML. We can observe that the species tree created using the concatenated DNA regions have a different topology, compared to each of the gene tree.
+
+\begin{figure}
+\centering
+\includegraphics[width=1\textwidth]{figures/Clownfish_all_phy_phyml_tree_GTRIG.png}
+\caption{Phylogenic tree constructed by phyML using 7 concatenated DNA regions of Clownfish. The substitution model used is the GTR model, with an estimation of the gamma and invariant site parameteres.}
+\label{fig:all}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Gene trees species tree estimation}
+We first created an XML file using BEAUti program. After running the BEAST we looked at the TRACER output to visually inspect the MCMC runs. The .log file is used to visualise the BEAST output and contains information about the statistics used, like the mean value, the effective sample size (ess), and the variable used. We removed 10\% of the sample as burning. The prior and posterior is not very informative because biased, considering that all population size created for a specific tree is part of a prior distribution. To have a good support of the distribution for every parameter (like the alpha parameters for example) we used 100'000'000 generation output. We looked if the distribution of the parameters were approximatively normal. We used the TreeAnnotator program to summarise the *BEAST output result in a singular tree, plotted using FigTree, for the species tree and for each gene tree we created with *BEAST.
+
+\subsection{Comparation of phylogeny obtained using *BEAST or PhyML}
+
+The PhyML species tree is visible on figure~\ref{fig:all}, constructed using the concatenated nucleotide sequence of 7 DNA regions concatenated together. The *BEAST species tree output is represented on figure~\ref{fig:allbeast}. 
+
+\begin{figure}
+\centering
+\includegraphics[width=1\textwidth]{figures/StarBEASTLog_species_out_trees.png}
+\caption{Species tree constructed using *BEAST and TreeAnnotator. The branch label correspond to the posterior parameter.}
+\label{fig:allbeast}
+\end{figure}
+
+We can observe that considering the prior and posterior distribution in the tree reconstruction, P. biaculentus, A. ocellaris and A. percula species are grouped in the same subtree. PhyML shows instead that P. biaculentus is separated from the other two species. Another difference observed is in the subtree composed by A. sebeae, A. polymnus and A.akindynos of the *BEAST tree, compared to the PhyML tree were A.akindynos is grouped together with a larger subtree. Looking to the posterior distribution the probability of the tree given by the data is well supported in the species tree created using *BEAST.
+
+\begin{figure}
+\centering
+\includegraphics[width=1\textwidth]{figures/StarBEASTLog_Clownfish_16s_out_trees.png}
+\caption{16s rRNA gene tree constructed using *BEAST and TreeAnnotator. The branch label correspond to the posterior parameter.}
+\label{fig:16sbeast}
+
+\includegraphics[width=1\textwidth]{figures/StarBEASTLog_Clownfish_zic1_out_trees.png}
+\caption{Zic1 gene tree constructed using *BEAST and TreeAnnotator. The branch label correspond to the posterior parameter.}
+\label{fig:zic1beast}
+\end{figure}
+
+\subsection{which gene trees are incongruent with the species tree?}
+
+In the 16s rRNA tree created with starBEAST (Fig.~\ref{fig:16sbeast}),  the species A. akindynos is not grouped with A. sebae and A. polymnus like in the species tree. The reg1 gene tree presents the same topology compared to the species tree. 
+For the zic1 gene (Fig.~\ref{fig:zic1beast}), species A. chrysopterus is separated from the subtree. A.akindynos present also a different topology, as well as one of the two species of A. polymnus. Tree for other genes can be found in the supplementary material.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Testing for positive selection}
+Only a tiny proportion of gene are under the control of a positive selection. Over the 20'000 genes tested for positive selection in the genome, only 12 genes presented positive selection, all related to genetic mechanisms involved in adaptation. During this section, we will screen for genes that are under positive selection. We will analyse nucleotide sequence of following genes:
+
+\begin{itemize}
+\item Clownfish snai2 gene: protein Snail homolog, swissprotID: Q91924.
+\item Clownfish ddb1gene: DNA damage binding protein, swissprotID: Q805F9.
+\item Clownfish slc9a6 gene: sodium/hydrogen exchanger, swissprotID: Q92581.
+\item Clownfish fam196a gene: Protein FAM196A, swissprotID: Q6ZSG2.
+\item Clownfish madd gene: MAP kinase-activating death domain, swissprotID: Q8WXG6.
+\item Clownfish tbx2 gene: T-box transcription factor, swissprotID: Q7ZTU9.
+\end{itemize}
+
+For each of the 6 DNA region investigated we calculated the best substitution model, as in section 1 (Maximum Likelihood), summarised in Table 2.
+
+<<method_table2, results="asis", echo=FALSE>>=
+method <- read.table("C://Mimi/UNI/Master/MLS_BIOINFORMATICS/IIsemestre/cours/Phylogeny_and_Comparative_Method/practicals/positive/best_method_result2.txt", h = T, sep = "\t")
+model <- data.frame(genes =  rownames(method), model = method[,1])
+
+print(xtable(model, caption="Best substitution model used to estimate the tree for different DNA regions."), table.placement = "!h")
+
+@
+
+We will use two positive tests and compare them using \textit{likelihood ratio test} (LRT). To do so, we will use the codml from Phylogenetic Analysis by Maximum Likelihood (PAML) package. We will compare models M1a and M2a, were M1a do not allow any positive selection. The ratio between the rate of non-synonymous mutations (dN), and the rate of synonymous mutations (dS) $\omega$ can be fixed ($\omega$ = 1) or estimated (> 1). The M2a model allows positive selection, with for each site three different classes of $\omega$ (<0, <1, =1, >1). The second test we will use compare the model A1 with (null hypothesis) or without \omeg fixed to 1. 
+
+The codml output the analysis are repeated multiple time, like doing one simple alignment, or the same alignment without gaps, or an alignment with only the variable sites. The program creates a table with the frequency of each codon in the sequence, it calculates the frequency of the nucleotides. It also calculates a distance matrix with a  pairwise comparison of $\omega$, and the variance across different sites. 
+
+\subsection{Gene fam196a}
+
+\begin{figure}
+\centering
+\includegraphics[width=1\textwidth]{figures/Clownfish_fam196a_phy_phyml_tree.png}
+\caption{Phylogenic tree of the fam196a gene constructed using phyML and FigTree. The branch labels correspond to the branch age.}
+\label{fig:fam196a}
+\end{figure}
+
+\subsubsection{Model M1a}
+The M1a model looks for selective pressure but doesn't allow any positive selection. This model is the null hypothesis for the M2a model.
+In the output \testit{.mcl} file, the important information are the log likelihood (= -6503.279010) for the model we selected (M1a), the number of branches with their length and the parameters of the model (41 parameters). The branch length is defined as a number of nucleotide substitutions per codon and the tree length is of 5.07140. 
+The different transition/transversion rate ratio (kappa = ts/tv) for the three codon positions is 2.76944.
+The proportion of sites in the different categories is estimated by $\omega$ and show a large proportion of purifying selection ($\omega = 0.05).
+
+\subsubsection{M2a}
+
+Model M2a look for a selective pressure with positive selection. The log likelihood is = -6504.268761 indicating only a slight difference compared to the null M1a model, i.e by adding 1 parameters not improving log likelihood. The number of parameters used in this model is 42. Looking to the dN/dS (w) for site classes (K=3) table one extra category, where omega is estimated, is added. This value being = 1 without positive selection present.
+
+\subsubsection{Model A1}
+Using the A1 null model the log likelihood is -6503.279010 with the numer of parameters = 41. The dN/dS (w) for site classes (K=4) table shows omega have the same process (in the branches) in the first two category. The third category shows a different process in back and forwoard branches.
+<<tableA1, results="asis", echo=FALSE, warning=F>>=
+table <- read.table("C://Mimi/UNI/Master/MLS_BIOINFORMATICS/IIsemestre/cours/Phylogeny_and_Comparative_Method/practicals/positive/paml/fam196a/tableA1alttxt.txt", h = F, sep = "\t")
+
+print(xtable(table, caption="dN/dS (w) for site classes (K=4) table for the A1 alternative model."), table.placement = "!h", include.rownames=FALSE, include.colnames=FALSE)
+@
+
+Regarding the alternative model the likelihood is of -6503.279010 (the same as with the null model) (np = 42) wit 15\% of the codons evolving under purifying selection, without sign a positive selection ($\omega=1$).
+
+\subsection{Question}
+\subsubsection*{For M2a and A1 models of the genes under selection, look at the position of the positively selected sites on the protein. Do the same sites belong to the same $\omega$ classes with both models?}
+
+Bayes Empirical Bayes (BEB) analysis (Yang, Wong & Nielsen 2005. Mol. Biol. Evol. 22:1107-1118) of the M2a model indicate that two different amino acid present a positive selection, represented in Table 4. BEB analysis asses for every site to be in category 1,2,3, 4. Both positions have an $\omega$ value higher than one with a probability around 50\%. 
+
+<<tableaa1, results="asis", echo=FALSE, warning=F>>=
+table <- read.table("C://Mimi/UNI/Master/MLS_BIOINFORMATICS/IIsemestre/cours/Phylogeny_and_Comparative_Method/practicals/positive/paml/fam196a/tableM2a.txt", h = F, sep = "\t")
+
+print(xtable(table, caption="Positively selected sites (amino acids refer to 1st sequence: AMPAK) for M2a model."), table.placement = "!h", include.rownames=FALSE, include.colnames=FALSE)
+@
+
+In the A1 model, the positive sites for foreground lineages are also two: 292 N and 294 W, with a probability of belonging to the fourth category of  0.772 and 0.803 respectively.
+   
+\subsubsection*{LRT analysis: Which model is significantly better? What are biologically the differences between the two tests? What can you conclude about the selective pressures undergone by your gene? }
+
+To test if one of the models used is better compared to the other we need to fix same variable comparing it to the null model.
+
+\begin{equation}
+LRT = 2(lnL(H_{1}) - lnL(H_{0}))
+\end{equation}
+
+\begin{equation}
+p-value = pchisq(q = LTR, df = np_{alt} - np_{null}, lower.tail=FALSE)
+\end{equation}
+
+In R the (non-central) Chi-Squared Distribution (pchisq) function is able to do the test. If the result is equal to 1, the complex model is not significantly different compared to the simplest one. 
+
+<<tablelrt, results="asis", echo=FALSE>>=
+table <- read.table("C://Mimi/UNI/Master/MLS_BIOINFORMATICS/IIsemestre/cours/Phylogeny_and_Comparative_Method/practicals/positive/paml/ltr_result.txt", h = T, sep = "\t", stringsAsFactors = F)
+
+print(xtable(table, caption="Likelihood ratio test (LRT) for models M1a vs M2a (first and second column) model A1 null hypothesis vs alternative hypothesis (third and fourth column)"), table.placement = "!h", include.rownames=FALSE)
+@
+
+Between the 6 genes analysed genes madd and slc9a6 presented a positive selection. The LRT test between the A1 null model and the A1 alternative model indicate that the null model is rejected with a probability p < 0.05 for both genes suggesting a difference between foreground and background branches in terms of selective pressure. Considering that no difference is observed in the M1a and M2a models, this suggests that a positive selection is present before the clownfish lineage speciation.
+
+\subsubsection*{Why are you not allowed to compare models M2a and A1?}
+
+It is not possible to compare the M2a and the A1 models because they are not modelling positive selection in the same way. The two models model has different assumptions. Moreover, the category in the two models is different (respectively 3 and 4 categories).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Dating trees}
+\subsection{Beast results analysis}
+Using MCMC, BEAST calculate the distribution of different parameters. In the case of an unimodal distribution it is easy to find the maximum value, whereas if the distribution is more complex, the presence of local maximum is possible. If the MCMC chain runs long enough, in the ideal case also running multiple independent analysis, the results will stabilise reaching an equilibrium. Another important aspect of the program is the sampling of the parameters: in the case, the proposed movement is too big compared to the parameter, there will be a mixing problem, and the analysis stays at the same point. The analysis results in a density distribution of each parameter.
+
+It is also possible to test if the evolution is different in the different species considered. Moreover, to date a tree node it is necessary to model the branching time using Yule birth-death model, calculating the probability of one branch to be separate in two branches. Through substitution modelisation, a log-normal distribution gives the number of speciations per branches and years.
+
+The meanRate (=4.18e-3) value reflect the mean of all $\alpha$ calculated for the different DNA regions from sampling a theoretical distribution, whereas the covariance informs about the inheritance of the substitution rate over branches. Finally, the global likelihood is calculated using the likelihood of the considered genes and the speciation parameter.
+
+\subsection{Questions}
+\subsubsection*{How old is the root of the tree. Give the mean as well as the 95\% highest posterior density (HPD).}
+The mean age for the root node is 28.13 millions of years with a highest posterior density (HPD) interval going from 13.27 to 43.4 millions of years. Similarly, for the clownfish clade, the mean estimated age is of 17.93 million of years with a 95\% of HPD interval between 10.5 and 26.35 million of years. On the other hand, the African clade has a younger age estimation, with a mean of 3.9 million of years (95\% HPD Interval [3.2308, 4.8609]).
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1\textwidth]{figures/Clownfish_all_cmd_trees_output.png}
+\caption{TreeAnnotator output tree with the estimated age of each node.}
+\label{fig:tree.dating1}
+\end{figure}
+
+\subsubsection*{How fast does the different DNA regions evolve?}
+We found the minimal mean $\alpha$ value in the zic1 gene with similar value for the bmp4 and cytb genes. The other genes have a higher $\alpha$ value, summarized in figure~\ref{fig:alpha1} and~\ref{fig:alpha2}.
+
+\begin{figure}
+\centering
+\includegraphics[width=1\textwidth]{figures/alpha2.PNG}
+\caption{Statistic of alpha parameters for the 7 genes analyzed.}
+\label{fig:alpha2}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1\textwidth]{figures/alpha_tracer.PNG}
+\caption{Density distribution of alpha parameters for the 7 genes analyzed.}
+\label{fig:alpha1}
+\end{figure}
+
+\subsubsection*{What source of error does this estimate include?}
+Using only the estimation of one fossil to calculate the age can lead to an error in the estimation of the divergence time, as well as considering that back substitutions are not visible and not taken into consideration.
+
+\subsubsection*{Is the rate of evolution significantly different in different lineages?}
+Looking at image~\ref{fig:alpha3} the highest posterior density (HPD) interval is separated for some genes, like zic1 and atp86 for example.
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1\textwidth]{figures/alpha3.PNG}
+\caption{95\% highest posterior density (HPD) interval of alpha parameters for the 7 genes analyzed.}
+\label{fig:alpha3}
+\end{figure}
+
+\subsubsection*{What is the marginal posterior estimate and HPD for the A. ocellaris and A. percula split?}
+Analysis of beast clownfish.tree output file using TreeAnnotator indicate that most of the root node are well supported by the data. One single node has only 56.26\% posterior distribution value, indicating a weak consensus compared to the other nodes.
+
+The posterior estimate for the A. ocellaris and A. percula split is equal to 1, represented on figure~\ref{fig:tree.dating2}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=17cm, height=15cm]{figures/Clownfish_all_cmd_trees_output_post.png}
+\caption{TreeAnnotator output plotted using FigTree showing the phylogeny of clownfishes with posterior distribution on the branch label.}
+\label{fig:tree.dating2}
+\end{figure}
+
+\newpage
+\section*{Note about the practicals}
+The report was way too long! But the cours really nice (even if complicated) :-)
+
+\begin{thebibliography}{111}
+\raggedright
+
+\bibitem {} Heled J, Drummond AJ. Bayesian Inference of Species Trees from Multilocus Data. Molecular Biology and Evolution. 2010;27(3):570-580. doi:10.1093/molbev/msp274.
+
+\bibitem {} Guindon S., Dufayard J.F., Lefort V., Anisimova M., Hordijk W., Gascuel O. New Algorithms and Methods to Estimate Maximum-Likelihood Phylogenies: Assessing the Performance of PhyML 3.0. Systematic Biology, 59(3):307-21, 2010.
+ 
+\end{thebibliography}
+
+\newpage
+\section*{Supplementary Material}
+
+\newcommand{\beginsupplement}{%
+        \setcounter{table}{0}
+        \renewcommand{\thetable}{S\arabic{table}}%
+        \setcounter{figure}{0}
+        \renewcommand{\thefigure}{S\arabic{figure}}%
+     }
+\beginsupplement
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1\textwidth]{figures/StarBEASTLog_Clownfish_cytb_out_trees.png}
+\caption{Cytochrome B (cytB) gene tree constructed using *BEAST and TreeAnnotator. The branch label correspond to the posterior parameter.}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width=1\textwidth]{figures/StarBEASTLog_Clownfish_gylt_out_trees.png}
+\caption{Gylt gene tree constructed using *BEAST and TreeAnnotator. The branch label correspond to the posterior parameter.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=1\textwidth]{figures/StarBEASTLog_Clownfish_rag1_out_trees.png}
+\caption{Rag1 gene tree constructed using *BEAST and TreeAnnotator. The branch label correspond to the posterior parameter.}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width=1\textwidth]{figures/StarBEASTLog_Clownfish_atp86_out_trees.png}
+\caption{atp86 gene tree constructed using *BEAST and TreeAnnotator. The branch label correspond to the posterior parameter.}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width=1\textwidth]{figures/StarBEASTLog_Clownfish_bmp4_out_trees.png}
+\caption{Bmp4 gene tree constructed using *BEAST and TreeAnnotator. The branch label correspond to the posterior parameter.}
+\end{figure}
+\end{document}

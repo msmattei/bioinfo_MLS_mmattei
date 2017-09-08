@@ -1,0 +1,157 @@
+\documentclass{article}
+
+\title{Assignment: fertility of Arabidopsis}
+\author{Mirjam Mattei\\Advanced Data Analysis II}
+\date{December 2016}
+
+\usepackage{adjustbox}
+
+\begin{document}
+
+\maketitle
+
+\section*{Data information}
+
+<<loadData,echo=FALSE,include=FALSE>>=
+##used library
+# library(xtable)
+library(knitr)
+library(ggplot2)
+library(lattice)
+library(lmerTest)
+library(lme4)
+
+## Load data
+arabinopsis <- read.csv("C://Mimi/UNI/Master/MLS_BIOINFORMATICS/Isemestre/Advanced_data_analysis/Assignements/Assignment4/arabidopsis.csv", h = T, stringsAsFactors = F)
+attach(arabinopsis)
+
+arabinopsis$gen <- as.factor(gen)
+arabinopsis$rack <- as.factor(rack)
+arabinopsis$nutrient <- as.factor(nutrient)
+
+table(nutrient, amd)
+
+## Look to the data!
+# Data distribution
+summary(arabinopsis)
+hist(total.fruits,50)
+
+
+boxplot(total.fruits~nutrient, main = "nutrient")
+boxplot(total.fruits~gen, main = "gen")
+boxplot(total.fruits~popu, col = c(2,4,4,7,7,2,2,4,2), main = "Boxplot of the population in different regions")
+boxplot(total.fruits~reg, main = "Fertility in different regions", col = c(7, 2,4))
+boxplot(total.fruits~status, main = "status")
+boxplot(total.fruits~rack, main = "rack")
+boxplot(total.fruits~amd, main = "amd")
+boxplot(total.fruits~amd*reg, main = "amd*reg")
+boxplot(total.fruits~amd*nutrient, main = "amd*nutrient")
+boxplot(total.fruits~amd*reg, main = "amd*reg")
+boxplot(total.fruits~nutrient*reg, main = "nutrient*reg")
+boxplot(total.fruits~nutrient*rack, main = "nutrient*rack")
+
+aov_reg <- anova(lm(total.fruits~reg))
+lm_reg <- summary(lm(total.fruits~reg))
+aov_popu <- anova(lm(total.fruits~popu))
+lm_popu <- summary(lm(total.fruits~popu))
+aov_nut <- anova(lm(total.fruits~nutrient))
+lm_nut <- summary(lm(total.fruits~nutrient))
+aov_amd <- anova(lm(total.fruits~amd))
+aov_gen <- anova(lm(total.fruits~gen))
+lm_gen <- summary(lm(total.fruits~gen))
+aov_rack <- anova(lm(total.fruits~rack))
+# lm_rack <- summary(lm(total.fruits~rack)) no need.. same result as aov_rack
+aov_status <- anova(lm(total.fruits~status))
+lm_status <- summary(lm(total.fruits~status))
+summary(lm(total.fruits~nutrient*rack))
+mean(total.fruits)
+
+m_pop <- NULL
+for (i in (popu)){
+  m <- mean(total.fruits[popu==i])
+  m_pop <- c(m_pop, m)
+}
+m_reg <- NULL
+for (i in (reg)){
+  m <- mean(total.fruits[reg==i])
+  m_reg <- c(m_reg, m)
+}
+
+pop_mean <- unique(data.frame(reg, popu, mean_reg = m_reg, mean_pop = m_pop))
+@
+
+
+The dataset "Aribidopsis" (available in file arabidopsis.csv) was collected to study the fertility of Arabidopsis thaliana according to certain variables. The experiment involved two variables of particular interest: the first one is a fertilization treatment, (‘nutrient’: level 1 = minimal nutrients, or level 8 = added nutrients) and the second one involves simulated herbivory (plants were "clipped" to mimic the effect of an herbivore eating part of the plant). The different regions where the sample were collected are Netherlands (NL), Spain (NL) or Sweden (SW). Different sample population were collected in this regions and registered as a factor variable (popu). The number of population by region are 2 in Neaderlands, with 55 and 61 sample each, 4 in Spain, with 100, 77, 51 and 64 sample for each population and 3 population collected in Sweden, with 48, 32 and 137 sample each.
+
+<<fig1,echo=FALSE,include=TRUE,fig.pos="h", fig.height=3.5,fig.cap="Distribution of arabinopsis fertility. The fertility refears to the number of fruits">>=
+hist(total.fruits,50, main = "histogram of fertility", xlab = "number of fruits")
+@
+
+The genotype represent a factor variable woth 24 different levels. Two different greenhouse racks (rack variable) acted as a nuisance factor with 2 levels. The germination method act as a nuisance factor (status = ‘Normal’, ‘Petri.Plate’, or ‘Transplant’).
+The fertility of the plant, the variable of interest (response variable), represent the number of total fruit set per plant (integer).The distrubution of fertility of arabinopsis plant is represented in figure 1. It indicate a non-normal distribution and follow a Poisson's ditribution.
+
+Different variables influence the number of fruits producend by plant: region of provenance of the plant have a statistically significant influence over the fertility (analysis of variance: p-value = \Sexpr{aov_reg$`Pr(>F)`[1]}), with a similar tendance observed in Neadernalds and Sweden compared to Spain. The linear regression model shows a significative difference between Neaderland and Spain (p-value = \Sexpr{lm_reg$coefficients[2,4]}) and non significative difference between Neaderlands and Sweden (p-value = \Sexpr{lm_reg$coefficients[3,4]}). 
+
+<<fig2,echo=FALSE,include=TRUE,fig.pos="h",fig.height=6,fig.env='figure',strip.white=TRUE,fig.cap="Number of fruits produced by plant in function of the region of provenience and the different sample of the country. NL = Neaderlands, SP = Spain, SW = Sweden">>=
+par(mfrow=c(1,2))
+boxplot(total.fruits~reg, col = c(7,2,4))
+boxplot(total.fruits~popu, col = c(2,4,4,7,7,2,2,4,2))
+@
+\newpage
+In figure 2 it is represented the different number of fruits produced by arabinopsis plant caming from different regions. In figure 2 B it is shown the different population of sample taken in different regions.
+
+<<fig3,echo=FALSE,include=TRUE,fig.pos="h", fig.height=4, fig.width=5,fig.cap="Mean number of fruits produced by plant in function of the region of provenience (bigger point) and the different sample of the country (smaller points). NL = Neaderlands, SP = Spain, SW = Sweden">>=
+par(mfrow=c(1,1))
+q = qplot(pop_mean$mean_pop, pop_mean$reg, xlab = "Mean fertility", ylab = "Regions") + theme_bw() + geom_point(aes(colour = pop_mean$reg), size = 2)  +  theme(legend.title=element_blank())
+q + geom_point(aes(pop_mean$mean_reg, pop_mean$reg, color = pop_mean$reg), size = 4)
+@
+
+
+Looking to figure 2 and 3 we decided to consider the regions variable as a binary factor with Neadernlands and Sweden as nordig country (Nord) and Spain as a country located in a more temperate pard of the world (Sud). We will for future analysis use this varaibe as a Nord-Sud factor.
+
+<<NordSudData,echo=FALSE,include=FALSE>>=
+arabinopsis$NordSud <- NULL
+arabinopsis$NordSud[reg == "SP"] <- "Sud" 
+arabinopsis$NordSud[reg %in% c("SW", "NL")] <- "Nord"
+attach(arabinopsis)
+@
+
+Other variable influencing the fertility of arabinopsis are the population (analysis of variance: p-value = \Sexpr{aov_popu$`Pr(>F)`[1]}), genotype (p-value = \Sexpr{aov_gen$`Pr(>F)`[1]}), greenhouse rack (p-value = \Sexpr{aov_rack$`Pr(>F)`[1]}) and with less significance the germination method (p-value = \Sexpr{aov_status$`Pr(>F)`[1]}). Fertilization treatment present a significant effect on the number of fruits produiced by the plants (analysis of variance: p-value = \Sexpr{aov_nut$`Pr(>F)`[1]}) and effect of the siumulated herbivory presence and apical meristem damage seems to not influence the plant fertility if considered as a unique explanatory variable (analysis of variance: p-value = \Sexpr{aov_amd$`Pr(>F)`[1]}).
+
+<<fig4,echo=FALSE,include=TRUE,fig.pos="h",fig.env='figure',strip.white=TRUE,fig.height=6,fig.cap="Fertility of arabinopsis plant under the influence of different conditions. 1 = Minimal nutrient, 8 = Added nutrient, clipped = Simulated herbivory, unclipped = absence of herbivory">>=
+par(mfrow=c(1,2))
+boxplot(total.fruits~nutrient, col = c("yellow","green"), main = "Fertilization treatment")
+boxplot(total.fruits~amd, col = c("red", "blue"), main = "Simulated herbivory")
+@
+
+
+The influence of the greenhouse rack varaible on fertility could be caused by the amount of nutrient in back 1 and 2. This were excluded by Fisher independency test were fertilizytion treatment and greenhouse rack are independent between them (p-value = \Sexpr{fisher.test(nutrient, rack)$p.value}).
+
+\newpage
+\section*{Model}
+In generalized linear mixed model (GLMM) the fixed and random variable are combined to find a linear predictor. This model integrate the effect of fixe and random variables on a non-normal distributed response variable (in our case the total number of fruits in arabinopsis). Using generalized linear mixed model a function of the fertility will vary liearly with the predicted values (for example nutrient and simulated presence of herbivory). 
+
+Predicted distribution of the number of fruits with the random effect of population, greenhouse rack and the genotype of the different plant. The Nord-Sud variable is considerated as a fixed variable as well as the simulated presence of herbivors and the fertilization treatment (nutrient). 
+
+<<model,echo=FALSE,include=T>>=
+arab.glmer <- glmer(total.fruits ~ nutrient + amd + NordSud + (1|popu) + (1|gen) + (1|rack), family = "poisson")
+summary(arab.glmer)
+@
+
+Genetic have an influence on the variance of the fertility: 13 genotype have an average greater than 0, 2 genotype equal to 0 and 
+
+<<fig5,echo=FALSE,include=TRUE,fig.pos="h",fig.cap="Caterpillar plot of prediction interval for random effects.">>=
+a <- dotplot(ranef(arab.glmer, condVar = T), strip = FALSE)[[1]]
+b <- dotplot(ranef(arab.glmer, condVar = T), strip = FALSE)[[2]]
+c <- dotplot(ranef(arab.glmer, condVar = T), strip = FALSE)[[3]]
+print(a, position =  c(0,0.67,1,1), more = TRUE)
+print(b, position = c(0, 0.33, 1, 0.67), more = TRUE)
+print(c, position = c(0, 0, 1, 0.33))
+@
+
+Prediction interval for the random effects in our GLMM model are represented in figure 5. This image represent the mean for a given condition of the random effect (blue points on the graphs). Moreover evaluating the variance-covariance effect of the random variable it is possible to obtain the prediction interval represented by the black lines on the figure. Genotype, population and rank do not influence the mean number of fruits per plant but have an influence over the varaibility. 
+
+Regarding the fixed varaible and analyzing the result of the generalized linear mixed model we can conclude that nutrient is the better estimate for the fertility of arabinopsis plant. Absence of the simulated presence of herbivory and the sud factor contribute in a positive way to the model, influencing (increasing) the number of fruits produced by the plants in the presence of this factors.
+
+
+\end{document}
