@@ -1,5 +1,5 @@
-MLS probram in bioinformatics.
-Script produced during cours and master project
+MLS program in bioinformatics.
+Script produced during cours and master project.
 
 script_SAGE: contains all script used during the SAGE class (mostly bash and some R)
 script_cours: sweave report produced for different bioinformatics cours takeng during the first and second semester. This courses include phylogeny, advanced data analysis and case studies in bioinformatics.
